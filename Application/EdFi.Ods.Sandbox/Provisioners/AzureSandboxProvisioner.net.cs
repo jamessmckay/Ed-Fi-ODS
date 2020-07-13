@@ -3,6 +3,7 @@
 // The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 // See the LICENSE and NOTICES files in the project root for more information.
 
+#if NETFRAMEWORK
 using System;
 using System.Configuration;
 using System.Data.Entity;
@@ -11,9 +12,10 @@ using System.Data.Entity.Infrastructure;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using EdFi.Admin.DataAccess;
 using EdFi.Admin.DataAccess.Utils;
-
+using EdFi.Ods.Common.Extensions;
 
 namespace EdFi.Ods.Sandbox.Provisioners
 {
@@ -23,6 +25,7 @@ namespace EdFi.Ods.Sandbox.Provisioners
     public class AzureSandboxProvisioner : ISandboxProvisioner
     {
         protected int CommandTimeout { get; }
+
         private string _connectionString;
         private ObjectContext _context;
 
@@ -57,11 +60,9 @@ namespace EdFi.Ods.Sandbox.Provisioners
             {
                 return _connectionString ??
                        (_connectionString = ConfigurationManager.ConnectionStrings["EdFi_master"]
-                                                                .ConnectionString);
+                           .ConnectionString);
             }
         }
-
-#region static members
 
         /// <summary>
         ///     Runs in a worker thread and
@@ -72,7 +73,7 @@ namespace EdFi.Ods.Sandbox.Provisioners
             var prov = new AzureSandboxProvisioner();
 
             var tmpName = Guid.NewGuid()
-                              .ToString("N");
+                .ToString("N");
 
             prov.CopySandbox(DatabaseNameBuilder.SampleDatabase, tmpName);
 
@@ -90,10 +91,6 @@ namespace EdFi.Ods.Sandbox.Provisioners
                 prov.RenameSandbox(tmpName, DatabaseNameBuilder.CodeGenDatabase);
             }
         }
-
-#endregion
-
-#region ISandboxProvisioner
 
         public void AddSandbox(string sandboxKey, SandboxType sandboxType)
         {
@@ -134,10 +131,6 @@ namespace EdFi.Ods.Sandbox.Provisioners
             ThreadPool.QueueUserWorkItem(ResetDemoSandboxWorker);
         }
 
-#endregion
-
-#region internal members
-
         protected virtual void CopySandbox(string orig, string copy)
         {
             var sql = string.Format("CREATE DATABASE [{0}] AS COPY OF [{1}];", copy, orig);
@@ -153,7 +146,7 @@ namespace EdFi.Ods.Sandbox.Provisioners
             }
             catch (SqlException)
             {
-                // either they don't have permission to delete the database 
+                // either they don't have permission to delete the database
                 // or (more likely) it doesn't exist, suppress the error.
             }
         }
@@ -166,34 +159,31 @@ namespace EdFi.Ods.Sandbox.Provisioners
 
         protected virtual SandboxStatus DoGetSandboxStatus(string sandboxName)
         {
-            object[] parms =
-            {
-                new SqlParameter("@name", sandboxName)
-            };
+            object[] parms = {new SqlParameter("@name", sandboxName)};
 
             var result = ObjectContext.ExecuteStoreQuery<SandboxStatus>(
-                                           "SELECT name, state Code, state_desc Description FROM sys.databases WHERE name = @name;",
-                                           parms)
-                                      .FirstOrDefault();
+                    "SELECT name, state Code, state_desc Description FROM sys.databases WHERE name = @name;",
+                    parms)
+                .FirstOrDefault();
 
             return result ?? SandboxStatus.ErrorStatus();
         }
 
         public string[] GetSandboxDatabases()
         {
-            object[] parameters =
-            {
-                new SqlParameter("@name", DatabaseNameBuilder.SandboxNameForKey("%"))
-            };
-
-            var result = ObjectContext.ExecuteStoreQuery<string>(
-                                           "SELECT name FROM sys.databases WHERE name like @name;",
-                                           parameters)
-                                      .ToArray();
-
-            return result;
+            return GetSandboxDatabasesAsync().GetResultSafely();
         }
 
-#endregion
+        public async Task<string[]> GetSandboxDatabasesAsync()
+        {
+            object[] parameters = {new SqlParameter("@name", DatabaseNameBuilder.SandboxNameForKey("%"))};
+
+            var result = await ObjectContext.ExecuteStoreQueryAsync<string>(
+                "SELECT name FROM sys.databases WHERE name like @name;",
+                parameters);
+
+            return result.ToArray();
+        }
     }
 }
+#endif

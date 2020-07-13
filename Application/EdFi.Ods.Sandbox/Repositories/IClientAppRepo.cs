@@ -21,6 +21,8 @@ namespace EdFi.Ods.Sandbox.Repositories
 
         IEnumerable<User> GetUsers();
 
+        Task<IList<User>> GetUsersAsync();
+
         User GetUser(int userId);
 
         User GetUser(string userName);

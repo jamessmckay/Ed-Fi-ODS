@@ -3,25 +3,11 @@
 // The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 // See the LICENSE and NOTICES files in the project root for more information.
 
+using System.Threading.Tasks;
 using EdFi.Admin.DataAccess;
 
 namespace EdFi.Ods.Sandbox.Provisioners
 {
-    public class SandboxStatus
-    {
-        public byte Code { get; set; }
-
-        public string Description { get; set; }
-
-        public static SandboxStatus ErrorStatus()
-        {
-            return new SandboxStatus
-                   {
-                       Code = byte.MaxValue, Description = "ERROR"
-                   };
-        }
-    }
-
     public interface ISandboxProvisioner
     {
         void AddSandbox(string sandboxKey, SandboxType sandboxType);
@@ -32,6 +18,25 @@ namespace EdFi.Ods.Sandbox.Provisioners
 
         void ResetDemoSandbox();
 
+#if NETFRAMEWORK
         string[] GetSandboxDatabases();
+#endif
+        Task<string[]> GetSandboxDatabasesAsync();
+    }
+
+    public class SandboxStatus
+    {
+        public byte Code { get; set; }
+
+        public string Description { get; set; }
+
+        public static SandboxStatus ErrorStatus()
+        {
+            return new SandboxStatus
+            {
+                Code = byte.MaxValue,
+                Description = "ERROR"
+            };
+        }
     }
 }

@@ -184,10 +184,15 @@ namespace EdFi.Ods.Sandbox.Repositories
 
         public IEnumerable<User> GetUsers()
         {
+            return GetUsersAsync().GetResultSafely();
+        }
+
+        public async Task<IList<User>> GetUsersAsync()
+        {
             using (var context = _contextFactory.CreateContext())
             {
-                return context.Users.Include(u => u.ApiClients.Select(ac => ac.Application))
-                    .ToList();
+                return await context.Users.Include(u => u.ApiClients.Select(ac => ac.Application))
+                    .ToListAsync();
             }
         }
 
