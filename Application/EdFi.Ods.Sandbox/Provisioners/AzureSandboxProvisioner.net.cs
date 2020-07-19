@@ -87,8 +87,8 @@ namespace EdFi.Ods.Sandbox.Provisioners
 
             if (result.Code == 0)
             {
-                prov.DeleteSandbox(DatabaseNameBuilder.CodeGenDatabase);
-                prov.RenameSandbox(tmpName, DatabaseNameBuilder.CodeGenDatabase);
+                prov.DeleteSandbox(DatabaseNameBuilder.DemoSandboxDatabase);
+                prov.RenameSandbox(tmpName, DatabaseNameBuilder.DemoSandboxDatabase);
             }
         }
 
